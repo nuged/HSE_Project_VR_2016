@@ -12,10 +12,10 @@ AGhostObstacle::AGhostObstacle()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 	bLeftButtonIsPressed = false;
 	bRightButtonIsPressed = false;
-
+	
 	// Create a dummy root component we can attach things to.
 	 RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	
@@ -28,13 +28,16 @@ AGhostObstacle::AGhostObstacle()
 	Box_GhostObstacle->SetWorldScale3D(FVector(1.0f, 1.0f, 1.0f));
 	Box_GhostObstacle->SetupAttachment(RootComponent);
 
-	/*
-	// Create and attach a camera, set its offset and rotation
-	UCameraComponent* OurCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("OurCamera"));
-	OurCamera->SetupAttachment(RootComponent);
-	OurCamera->SetRelativeLocation(FVector(-500.0f, 0.0f, 500.0f));
-	OurCamera->SetRelativeRotation(FRotator(-45.0f, 0.0f, 0.0f));
-	*/
+	// Create a decal in the world to show the cursor's location
+	CursorToWorld = CreateDefaultSubobject<UDecalComponent>("CursorToWorld");
+	CursorToWorld->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UMaterial> DecalMaterialAsset(TEXT("Material'/Game/Decal/M_Cursor_Decal.M_Cursor_Decal'"));
+	if (DecalMaterialAsset.Succeeded())
+	{
+		CursorToWorld->SetDecalMaterial(DecalMaterialAsset.Object);
+	}
+	CursorToWorld->DecalSize = FVector(32.0f, 64.0f, 64.0f);
+	CursorToWorld->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f).Quaternion());
 }
 
 // Called when the game starts or when spawned
@@ -42,6 +45,8 @@ void AGhostObstacle::BeginPlay()
 {
 	Super::BeginPlay();
 	MyController = GetWorld()->GetFirstPlayerController();
+	if (MyController)
+		MyController->bAutoManageActiveCameraTarget = false;
 }
 
 // Called every frame
@@ -49,14 +54,22 @@ void AGhostObstacle::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
-	if (bLeftButtonIsPressed) {
-		FHitResult TraceResult(ForceInit);
+	FHitResult TraceResult(ForceInit);
+	if (MyController)
 		MyController->GetHitResultUnderCursor(ECollisionChannel::ECC_GameTraceChannel1, false, TraceResult);
+
+	if (CursorToWorld) {
+			FVector CursorFV = TraceResult.ImpactNormal;
+			FRotator CursorR = CursorFV.Rotation();
+			CursorToWorld->SetWorldLocation(TraceResult.Location);
+			CursorToWorld->SetWorldRotation(CursorR);
+	}
+
+	if (bLeftButtonIsPressed) {
 		SetActorLocation(TraceResult.Location);
 	}
+
 	if (bRightButtonIsPressed) {
-		FHitResult TraceResult(ForceInit);
-		MyController->GetHitResultUnderCursor(ECollisionChannel::ECC_GameTraceChannel1, false, TraceResult);
 		FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceResult.Location);
 		SetActorRotation(NewRotation);
 	}
@@ -107,9 +120,11 @@ void AGhostObstacle::OnDragFinished()
 void AGhostObstacle::OnRotateStarted()
 {
 	bRightButtonIsPressed = true;
+	CursorToWorld->ToggleVisibility(false);
 }
 
 void AGhostObstacle::OnRotateFinished()
 {
 	bRightButtonIsPressed = false;
+	CursorToWorld->ToggleVisibility(true);
 }

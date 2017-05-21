@@ -14,22 +14,24 @@ public:
 	// Sets default values for this actor's properties
 	ATarget();
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	
-	// Called every frame
-	virtual void Tick( float DeltaSeconds ) override;
+	// total HP of the target
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Health)
+	int HP_Target;
 
-	UPROPERTY(EditAnywhere)
-		USceneComponent *Root_Target;
+	// Damage taken by the Target by every collision
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Health)
+	int Damage;
 
-	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent *SM_Target;
+	UPROPERTY(EditAnywhere, Category=Geometry)
+	USceneComponent *Root_Target;
 
-	UPROPERTY(EditAnywhere)
-		UBoxComponent *Box_Target;
+	UPROPERTY(EditAnywhere, Category=Geometry)
+	UStaticMeshComponent *SM_Target;
+
+	UPROPERTY(EditAnywhere, Category=Geometry)
+	UBoxComponent *Box_Target;
 	
 	UFUNCTION()
-		void OnEnemyEnterTargetBox(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp,
-			int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnEnemyEnterTargetBox(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp,
+		 int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };

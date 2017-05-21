@@ -9,7 +9,7 @@
 AEnemy::AEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 // Called when the game starts or when spawned
@@ -24,16 +24,3 @@ void AEnemy::BeginPlay()
 		AIController->SetObjectToMoveTo(Actor);
 	}
 }
-
-// Called every frame
-void AEnemy::Tick( float DeltaTime )
-{
-	Super::Tick( DeltaTime ); // Call parent class tick function 
-	
-	FVector Location(0.0f, 0.0f, 0.0f);
-	FRotator Rotation(0.0f, 0.0f, 0.0f);
-	FActorSpawnParameters SpawnInfo;
-	GetWorld()->SpawnActor<AEnemy>(Location, Rotation, SpawnInfo);
-}
-
-

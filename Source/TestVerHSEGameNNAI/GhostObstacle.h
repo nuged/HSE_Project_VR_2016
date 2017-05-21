@@ -24,16 +24,20 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
 protected:
-	// Visual and not only representation
-	UPROPERTY(EditAnywhere)
+	/** Visual component */
+	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Visual")
 		USceneComponent* OurVisibleComponent;
 
-	// object to replace with
+	/** A decal that projects to the cursor location. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cursor")
+		class UDecalComponent* CursorToWorld;
+
+	/** A real obstacle that will replace out chost one */
 	UPROPERTY(EditAnywhere)
 		TSubclassOf<class ARealObstacle> RealObstacleToSpawn;
 	
-	//collision box 
-	UPROPERTY(EditAnywhere)
+	/** Box shape to detect collisions */
+	UPROPERTY(EditAnywhere, Category = "Collision")
 		UBoxComponent *Box_GhostObstacle;
 	
 	// Replace with a real one
@@ -41,7 +45,6 @@ protected:
 
 	// delete an object
 	void Delete();
-
 
 	// drag
 	void OnDragStarted();

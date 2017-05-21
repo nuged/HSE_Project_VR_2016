@@ -24,26 +24,17 @@ ATarget::ATarget()
 	Box_Target->bGenerateOverlapEvents = true;
 	Box_Target->OnComponentBeginOverlap.AddDynamic(this, &ATarget::OnEnemyEnterTargetBox);
 	Box_Target->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-}
 
-// Called when the game starts or when spawned
-void ATarget::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void ATarget::Tick( float DeltaTime )
-{
-	Super::Tick( DeltaTime );
-
+	HP_Target = 100;
+	Damage = 3;
 }
 
 void ATarget::OnEnemyEnterTargetBox(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);
-	if (Enemy)
+	if (Enemy) {
 		Enemy->Destroy();
+		HP_Target -= Damage;
+	}
 }
 

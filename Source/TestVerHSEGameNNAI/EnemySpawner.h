@@ -16,19 +16,39 @@ public:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
-	// Called every frame
-	virtual void Tick( float DeltaSeconds ) override;
 
-protected:
-	UPROPERTY(EditAnywhere, Category = "Spawning")
-		TSubclassOf<class AEnemy> EnemyToSpawn;
-	
-	FTimerHandle SpawnTimer;
+	// Success widget for successful game ending
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> wSuccess;
 
-	UPROPERTY(EditAnywhere, Category = "Spawning")
+	// Variable to hold the widget After Creating it.
+	class UUserWidget *MySuccess;
+
+	// Spawning indicator
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Spawning)
+	bool AbleToSpawn;
+	
+	// Timer for finishing
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
+	FTimerHandle EndTimer;
+
+	// Seconds before finish
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
+	float EndDelay;
+
+	// Interval between spawnings
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
 	float SpawnDelay;
 
+	// first time delay beffore spawning
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
+	float FirstTimeDelay;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Spawning)
+	TSubclassOf<class AEnemy> EnemyToSpawn;
+
 private:
+	FTimerHandle SpawnTimer;
 	void SpawnEnemy();
+	void ShowSuccess();
 };
