@@ -40,7 +40,9 @@ void ARealObstacle::Tick( float DeltaTime )
 void ARealObstacle::OnEnemyEnterObstacleBox(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);
-	if (Enemy)
+	if (Enemy) {
+		Enemy->Send(0);
 		Enemy->Destroy();
+	}
 }
 

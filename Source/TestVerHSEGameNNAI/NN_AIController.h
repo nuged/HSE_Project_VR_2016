@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AIController.h"
+#include "ANN.h"
 #include "NN_AIController.generated.h"
 
 /**
@@ -20,7 +21,9 @@ public:
 	
 	void SetObjectToMoveTo(AActor *Actor);
 	
+	UANN *NN;
+
 protected:
-	UBehaviorTreeComponent *BT_Comp;
-	UBlackboardComponent *BB_Comp;
+	class UBehaviorTreeComponent *BT_Comp;
+	class UBlackboardComponent *BB_Comp;
 };

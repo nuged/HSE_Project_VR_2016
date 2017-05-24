@@ -17,6 +17,28 @@ public:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Behavior")
-	class UBehaviorTree *BT_Enemy;
+	virtual void Tick(float DeltaSeconds) override;
+
+	inline void Send(float reward);
+
+	UPROPERTY(EditAnywhere, Category = Behavior)
+		class UBehaviorTree *BT_Enemy;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+		float step_distance;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+		float Norminator;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+		TSubclassOf<class APointToGo> Dest;
+
+private:
+	class ATarget *Target;
+	class ANN_AIController *AIC;
+	bool proc;
+	bool flag;
+	FVector TargetLocation;
+	FVector ToGo;
+	inline void Implement(int action);
 };

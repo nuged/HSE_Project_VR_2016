@@ -25,26 +25,26 @@ public:
 	class UUserWidget *MySuccess;
 
 	// Spawning indicator
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Spawning)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Spawning)
 	bool AbleToSpawn;
 	
 	// Timer for finishing
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Timing)
 	FTimerHandle EndTimer;
 
 	// Seconds before finish
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Timing)
 	float EndDelay;
 
 	// Interval between spawnings
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Timing)
 	float SpawnDelay;
 
 	// first time delay beffore spawning
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Timing)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Timing)
 	float FirstTimeDelay;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Spawning)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spawning)
 	TSubclassOf<class AEnemy> EnemyToSpawn;
 
 private:

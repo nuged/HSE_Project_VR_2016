@@ -25,7 +25,7 @@ ATarget::ATarget()
 	Box_Target->OnComponentBeginOverlap.AddDynamic(this, &ATarget::OnEnemyEnterTargetBox);
 	Box_Target->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
-	HP_Target = 100;
+	HP_Target = 360;
 	Damage = 3;
 }
 
@@ -33,6 +33,7 @@ void ATarget::OnEnemyEnterTargetBox(UPrimitiveComponent * OverlappedComponent, A
 {
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);
 	if (Enemy) {
+		Enemy->Send(1);
 		Enemy->Destroy();
 		HP_Target -= Damage;
 	}
