@@ -3,7 +3,6 @@
 #pragma once
 
 #include "AIController.h"
-#include "ANN.h"
 #include "NN_AIController.generated.h"
 
 /**
@@ -20,8 +19,6 @@ public:
 	virtual void Possess(APawn *Pawn) override;
 	
 	void SetObjectToMoveTo(AActor *Actor);
-	
-	UANN *NN;
 
 protected:
 	class UBehaviorTreeComponent *BT_Comp;

@@ -42,7 +42,7 @@ void AEnemy::Tick(float DeltaSeconds)
 		float Yaw = GetActorRotation().Yaw / Norminator;
 		TArray<float> input;
 		input = { Distance, 1 - Distance, X, 1 - X, Y, 1 - Y, Yaw, 1 - Yaw };
-		int action = AIC->NN->ChooseAction(input);
+		int action = Target->NN->ChooseAction(input);
 		Implement(action);
 		flag = true;
 	}
@@ -56,15 +56,17 @@ void AEnemy::Tick(float DeltaSeconds)
 	}
 }
 
-inline void AEnemy::Send(float reward)
+inline int AEnemy::Send(float reward)
 {
-	AIC->NN->WModify(reward);
+	Target->NN->WModify(reward);
+	return 0;
 }
 
-inline void AEnemy::Implement(int action)
+inline int AEnemy::Implement(int action)
 {
 	float angle = 360.0 / 8 * action;
 	ToGo.X += cos(angle) * step_distance;
 	ToGo.Y += sin(angle) * step_distance;
 	AIC->MoveToLocation(ToGo);
+	return 0;
 }

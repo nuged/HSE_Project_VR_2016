@@ -18,27 +18,39 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
+	
+	UFUNCTION(BlueprintCallable, Category = SettingNN)
+	inline int Implement(int action);
 
-	inline void Send(float reward);
+	UFUNCTION(BlueprintCallable, Category=SettingNN)
+	inline int Send(float reward);
 
-	UPROPERTY(EditAnywhere, Category = Behavior)
-		class UBehaviorTree *BT_Enemy;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Behavior)
+	class UBehaviorTree *BT_Enemy;
 
-	UPROPERTY(EditAnywhere, Category = Movement)
-		float step_distance;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+	float step_distance;
 
-	UPROPERTY(EditAnywhere, Category = Movement)
-		float Norminator;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+	float Norminator;
 
-	UPROPERTY(EditAnywhere, Category = Movement)
-		TSubclassOf<class APointToGo> Dest;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+	TSubclassOf<class APointToGo> Dest;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Target)
+	FVector TargetLocation;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+	FVector ToGo;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+	bool proc;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+	bool flag;
 
 private:
 	class ATarget *Target;
 	class ANN_AIController *AIC;
-	bool proc;
-	bool flag;
-	FVector TargetLocation;
-	FVector ToGo;
-	inline void Implement(int action);
+	
 };

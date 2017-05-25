@@ -9,7 +9,6 @@
 
 ANN_AIController::ANN_AIController()
 {
-	NN = NewObject<UANN>();
 	BT_Comp = CreateDefaultSubobject<UBehaviorTreeComponent>(FName("BT_Comp"));
 	BB_Comp = CreateDefaultSubobject<UBlackboardComponent>(FName("BB_Comp"));
 }

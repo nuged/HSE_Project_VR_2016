@@ -29,6 +29,11 @@ ATarget::ATarget()
 	Damage = 3;
 }
 
+void ATarget::BeginPlay()
+{
+	NN = NewObject<UANN>();
+}
+
 void ATarget::OnEnemyEnterTargetBox(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);

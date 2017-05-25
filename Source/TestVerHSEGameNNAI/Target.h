@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "ANN.h"
 #include "Target.generated.h"
 
 UCLASS()
@@ -13,6 +14,8 @@ class TESTVERHSEGAMENNAI_API ATarget : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ATarget();
+
+	virtual void BeginPlay() override;
 
 	// total HP of the target
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Health)
@@ -31,6 +34,8 @@ public:
 	UPROPERTY(EditAnywhere, Category=Geometry)
 	UBoxComponent *Box_Target;
 	
+	UANN *NN;
+
 	UFUNCTION()
 	void OnEnemyEnterTargetBox(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp,
 		 int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
