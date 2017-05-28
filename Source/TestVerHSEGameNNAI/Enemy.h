@@ -23,7 +23,10 @@ public:
 	inline int Implement(int action);
 
 	UFUNCTION(BlueprintCallable, Category=SettingNN)
-	inline int Send(float reward);
+	inline int Send();
+
+	UFUNCTION(BlueprintCallable, Category = SettingNN)
+	inline int SetReward(float value);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Behavior)
 	class UBehaviorTree *BT_Enemy;
@@ -52,5 +55,6 @@ public:
 private:
 	class ATarget *Target;
 	class ANN_AIController *AIC;
-	
+	TArray<float> state;
+	int neuron;
 };

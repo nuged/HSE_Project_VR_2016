@@ -2,6 +2,7 @@
 
 #include "TestVerHSEGameNNAI.h"
 #include "ANN.h"
+#include "Runtime/Engine/Classes/Engine/Engine.h"
 
 UANN::UANN()
 {
@@ -9,10 +10,6 @@ UANN::UANN()
 	sizes[0] = 8;
 	sizes[1] = 8;
 	sizes[2] = 2;
-
-	input.resize(3);
-	for (int i = 0; i < 3; ++i)
-		input[i].resize(sizes[i]);
 
 	weights.resize(sizes[1]);
 	for (auto& vecs : weights) {
@@ -22,9 +19,14 @@ UANN::UANN()
 	}
 
 	// fill weights with random nums
+	std::random_device rd;
+	std::mt19937 eng(rd());
+	std::uniform_real_distribution<float> dis(0.5, 1.0);
+	auto gen = std::bind(dis, eng);
+
 	for (auto& vecs : weights)
 		for (int i = 0; i < 3; ++i)
-			randomize(vecs[i]);
+			std::generate(begin(vecs[i]), end(vecs[i]), gen);
 
 	// initialize parameters
 	choice = FVector(0.33f, 0.33f, 0.33f);
@@ -33,15 +35,9 @@ UANN::UANN()
 	vigilance = FVector(0.33f, 0.33f, 0.33f);
 }
 
-int UANN::ChooseAction(const TArray<float>& state)
+TArray<int> UANN::ChooseAction(const TArray<float>& state)
 {
-	for (int i = 0; i < sizes[0]; ++i)
-		input[0][i] = state[i];
-
-	input[1].resize(sizes[1]);
-	fill(input[1].begin(), input[1].end(), 1);
-
-	input[2] = { 1, 0 };
+	std::vector<TVector> input = Extract(state);
 
 	// calculating choose function for every neuron
 	TVector cognitive(weights.size());
@@ -84,45 +80,83 @@ int UANN::ChooseAction(const TArray<float>& state)
 
 	// check if we chose it before
 	bool ok = chosen.insert({ index, index }).second;
+	
+	// add new neuron
 	if (ok) {
+		std::random_device rd;
+		std::mt19937 eng(rd());
+		std::uniform_real_distribution<float> dis(0.5, 1.0);
+		auto gen = std::bind(dis, eng);
+
 		std::vector<TArray<float>> new_weights(3);
 		for (int i = 0; i < 3; ++i) {
 			new_weights[i].SetNumZeroed(sizes[i]);
-			randomize(new_weights[i]);
+			std::generate(begin(new_weights[i]), end(new_weights[i]), gen);
 		}
 		weights.push_back(new_weights);
 	}
 
 	// record currently chosen neuron
-	chosen_neuron = index;
+	TArray<int> result;
+	result.Add(index);
 
-	// return action
+	// choose action
 	TVector actions(sizes[1]);
 	for(int i = 0; i < sizes[1]; ++i)
 		actions[i] = weights[index][1][i];
-
 	int action = std::max_element(actions.begin(), actions.end()) - actions.begin();
-	return action;
+
+	result.Add(action);
+	return result;
 }
 
-void UANN::WModify(float reward)
-{
-	input[2] = { reward, 1 - reward };
+void UANN::WModify()
+{	
+	// check if there is data to modify weights
+	if (modification_queue.empty())
+		return;
+	
+	// extracting data from queue
+	std::pair<int, TArray<float>> cur_elem = modification_queue.front();
+	modification_queue.pop();
+
+	int neuron = cur_elem.first;
+	std::vector<TVector> respond = Extract(cur_elem.second);
+	
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+		FString::Printf(TEXT("%f, %f"),
+			respond[2][0], respond[2][1]));
+
 	for (int i = 0; i < 3; ++i) {
 		for (int j = 0; j < sizes[i]; ++j) {
-			float val = weights[chosen_neuron][i][j];
-			weights[chosen_neuron][i][j] = (1 - rate[i]) * val;
-			weights[chosen_neuron][i][j] += rate[i] * std::min(input[i][j], val);
+			float val = weights[neuron][i][j];
+			weights[neuron][i][j] = (1 - rate[i]) * val;
+			weights[neuron][i][j] += rate[i] * std::min(respond[i][j], val);
 		}
 	}
 }
 
-inline void UANN::randomize(TArray<float>& vec)
+inline int UANN::AddToQueue(int neuron, TArray<float> respond)
 {
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+		//FString::Printf(TEXT("%u"), modification_queue.size()));
 
-	std::random_device rd;
-	std::mt19937 eng(rd());
-	std::uniform_real_distribution<float> dis(0.5, 1.0);
-	auto gen = std::bind(dis, eng);
-	std::generate(begin(vec), end(vec), gen);
+	std::pair<int, TArray<float>> new_elem(neuron, respond);
+	modification_queue.push(new_elem);
+	return 0;
+}
+
+inline std::vector<TVector> UANN::Extract(const TArray<float>& data)
+{
+	std::vector<TVector> respond(3);
+	for (int i = 0; i < data.Num(); ++i) {
+		int type = 0;
+		if (i == data.Num() - 1)
+			type = 2;
+		respond[type].push_back(data[i]);
+		respond[type].push_back(1 - data[i]);
+	}
+	respond[1].resize(sizes[1]);
+	fill(respond[1].begin(), respond[1].end(), 1.0);
+	return respond;
 }

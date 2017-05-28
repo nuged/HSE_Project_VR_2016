@@ -17,6 +17,8 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	// total HP of the target
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Health)
 	int HP_Target;

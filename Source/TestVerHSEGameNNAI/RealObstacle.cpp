@@ -41,7 +41,8 @@ void ARealObstacle::OnEnemyEnterObstacleBox(UPrimitiveComponent * OverlappedComp
 {
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);
 	if (Enemy) {
-		Enemy->Send(0);
+		Enemy->SetReward(0);
+		Enemy->Send();
 		Enemy->Destroy();
 	}
 }
