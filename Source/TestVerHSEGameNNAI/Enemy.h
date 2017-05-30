@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Character.h"
+#include "ANN.h"
 #include "Enemy.generated.h"
 
 UCLASS()
@@ -18,15 +19,6 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
-	
-	UFUNCTION(BlueprintCallable, Category = SettingNN)
-	inline int Implement(int action);
-
-	UFUNCTION(BlueprintCallable, Category=SettingNN)
-	inline int Send();
-
-	UFUNCTION(BlueprintCallable, Category = SettingNN)
-	inline int SetReward(float value);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Behavior)
 	class UBehaviorTree *BT_Enemy;
@@ -34,27 +26,27 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
 	float step_distance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
-	float Norminator;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
-	TSubclassOf<class APointToGo> Dest;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Target)
 	FVector TargetLocation;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
-	FVector ToGo;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
-	bool proc;
+
+	inline void Send(float new_reward);
+
+	unsigned dir;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
-	bool flag;
+	float norm;
+
+protected:
+	inline float CountReward();
+	void MakeStep(unsigned direction);
+	void GetAction();
 
 private:
 	class ATarget *Target;
 	class ANN_AIController *AIC;
-	TArray<float> state;
-	int neuron;
+	float reward;
+	bool flag;
+	bool f;
+	TVector state;
+	FVector ToGo;
 };

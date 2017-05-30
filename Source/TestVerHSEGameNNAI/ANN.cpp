@@ -6,157 +6,191 @@
 
 UANN::UANN()
 {
-	// initialize sizes
-	sizes[0] = 8;
-	sizes[1] = 8;
-	sizes[2] = 2;
+	rate = 0.127;
 
-	weights.resize(sizes[1]);
-	for (auto& vecs : weights) {
-		vecs.resize(3);
-		for (int i = 0; i < 3; ++i)
-			vecs[i].SetNumZeroed(sizes[i]);
-	}
+	// set sizes
+	INP_SIZE = 2;
+	HID_SIZE = 6;
+	OUT_SIZE = 8;
 
-	// fill weights with random nums
-	std::random_device rd;
-	std::mt19937 eng(rd());
-	std::uniform_real_distribution<float> dis(0.5, 1.0);
-	auto gen = std::bind(dis, eng);
+	// initialize weights' and biases' sizes
+	InpHid.resize(HID_SIZE);
+	for (auto& vec : InpHid)
+		vec.resize(INP_SIZE);
 
-	for (auto& vecs : weights)
-		for (int i = 0; i < 3; ++i)
-			std::generate(begin(vecs[i]), end(vecs[i]), gen);
+	HidOut.resize(OUT_SIZE);
+	for (auto& vec : HidOut)
+		vec.resize(HID_SIZE);
 
-	// initialize parameters
-	choice = FVector(0.33f, 0.33f, 0.33f);
-	rate = FVector(0.33f, 0.33f, 0.33f);
-	contribution = FVector(0.33f, 0.33f, 0.33f);
-	vigilance = FVector(0.33f, 0.33f, 0.33f);
+	biInp.resize(HID_SIZE);
+	biHid.resize(OUT_SIZE);
+
+	InitializeWeights();
+
+	// set activation functions
+	acHid = acOut = BiSig;
+	derHid = derOut = derBiSig;
 }
 
-TArray<int> UANN::ChooseAction(const TArray<float>& state)
+unsigned UANN::ChooseAction(const TVector& state) const
 {
-	std::vector<TVector> input = Extract(state);
-
-	// calculating choose function for every neuron
-	TVector cognitive(weights.size());
-	for (int i = 0; i < weights.size(); ++i) {
-		float sum = 0;
-		for (int j = 0; j < 3; ++j) {
-			float val = 0;
-			float norm = 0;
-			for (int k = 0; k < sizes[j]; ++k) {
-				val += std::min(input[j][k], weights[i][j][k]);
-				norm += weights[i][j][k];
-			}
-			sum += contribution[j] * val / (choice[j] + norm);
-		}
-		cognitive[i] = sum;
-	}
-
-	// find neuron with maximal CF
-	bool indicator = true;
-	int index;
-	while (indicator) {
-		auto iter = std::max_element(cognitive.begin(), cognitive.end());
-		index = iter - cognitive.begin();
-		indicator = false;
-		for (int i = 0; i < 3; ++i) {
-			float val = 0;
-			float norm = 0;
-			for (int j = 0; j < sizes[i]; ++j) {
-				val += std::min(input[i][j], weights[index][i][j]);
-				norm += input[i][j];
-			}
-			float m = val / norm;
-			if (m < vigilance[i]) {
-				indicator = true;
-				*iter = 0;
-				break;
-			}
-		}
-	}
-
-	// check if we chose it before
-	bool ok = chosen.insert({ index, index }).second;
-	
-	// add new neuron
-	if (ok) {
-		std::random_device rd;
-		std::mt19937 eng(rd());
-		std::uniform_real_distribution<float> dis(0.5, 1.0);
-		auto gen = std::bind(dis, eng);
-
-		std::vector<TArray<float>> new_weights(3);
-		for (int i = 0; i < 3; ++i) {
-			new_weights[i].SetNumZeroed(sizes[i]);
-			std::generate(begin(new_weights[i]), end(new_weights[i]), gen);
-		}
-		weights.push_back(new_weights);
-	}
-
-	// record currently chosen neuron
-	TArray<int> result;
-	result.Add(index);
-
-	// choose action
-	TVector actions(sizes[1]);
-	for(int i = 0; i < sizes[1]; ++i)
-		actions[i] = weights[index][1][i];
-	int action = std::max_element(actions.begin(), actions.end()) - actions.begin();
-
-	result.Add(action);
-	return result;
+	TVector output = ActiveOutput(SendHidden(ActiveHidden(SendInput(state))));
+	unsigned NumAction = std::max_element(output.begin(), output.end()) - output.begin();
+	return NumAction;
 }
 
-void UANN::WModify()
-{	
-	// check if there is data to modify weights
-	if (modification_queue.empty())
+void UANN::AddToQueue(const TVector & input, const TVector & desired)
+{
+	if (LearnQueue.size() > 100)
 		return;
-	
-	// extracting data from queue
-	std::pair<int, TArray<float>> cur_elem = modification_queue.front();
-	modification_queue.pop();
+	std::vector<TVector> temp(2);
+	temp[0] = input;
+	temp[1] = desired;
+	LearnQueue.push(temp);
+}
 
-	int neuron = cur_elem.first;
-	std::vector<TVector> respond = Extract(cur_elem.second);
-	
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
-		FString::Printf(TEXT("%f, %f"),
-			respond[2][0], respond[2][1]));
+void UANN::Learn()
+{
+	if (LearnQueue.empty())
+		return;
 
-	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < sizes[i]; ++j) {
-			float val = weights[neuron][i][j];
-			weights[neuron][i][j] = (1 - rate[i]) * val;
-			weights[neuron][i][j] += rate[i] * std::min(respond[i][j], val);
+	TVector Input = LearnQueue.top()[0];
+	TVector Target = LearnQueue.top()[1];
+	LearnQueue.pop();
+
+	//if (GEngine)
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%u"), LearnQueue.size()));
+
+
+	// get layers
+	TVector HidLayer = SendInput(Input); // not activated hidden
+	TVector acHidden = ActiveHidden(HidLayer); // activated hidden
+	TVector OutLayer = SendHidden(acHidden); // not activated output
+
+	// get values for correting output weights
+	{
+		TVector Output = ActiveOutput(OutLayer);
+		for (size_t i = 0; i < OUT_SIZE; ++i) {
+			OutLayer[i] = (Target[i] - Output[i]) * (*derOut)(OutLayer[i]);
 		}
 	}
-}
 
-inline int UANN::AddToQueue(int neuron, TArray<float> respond)
-{
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
-		//FString::Printf(TEXT("%u"), modification_queue.size()));
-
-	std::pair<int, TArray<float>> new_elem(neuron, respond);
-	modification_queue.push(new_elem);
-	return 0;
-}
-
-inline std::vector<TVector> UANN::Extract(const TArray<float>& data)
-{
-	std::vector<TVector> respond(3);
-	for (int i = 0; i < data.Num(); ++i) {
-		int type = 0;
-		if (i == data.Num() - 1)
-			type = 2;
-		respond[type].push_back(data[i]);
-		respond[type].push_back(1 - data[i]);
+	// get values for correcting hidden weigths
+	{
+		TVector temp(HID_SIZE);
+		for (size_t i = 0; i < HID_SIZE; ++i) {
+			float sum = 0;
+			for (size_t j = 0; j < OUT_SIZE; ++j) {
+				sum += OutLayer[j] * HidOut[j][i];
+			}
+			temp[i] = sum;
+		}
+		for (size_t i = 0; i < HID_SIZE; ++i) {
+			HidLayer[i] = temp[i] * (*derHid)(HidLayer[i]);
+		}
 	}
-	respond[1].resize(sizes[1]);
-	fill(respond[1].begin(), respond[1].end(), 1.0);
-	return respond;
+
+	// correct weights
+	for (size_t i = 0; i < OUT_SIZE; ++i) {
+		for (size_t j = 0; j < HID_SIZE; ++j) {
+			HidOut[i][j] += rate * OutLayer[i] * acHidden[j];
+		}
+		biHid[i] += rate * OutLayer[i];
+	}
+	for (size_t i = 0; i < HID_SIZE; ++i) {
+		for (size_t j = 0; j < INP_SIZE; ++j) {
+			InpHid[i][j] += rate * HidLayer[i] * Input[j];
+		}
+		biInp[i] += rate * HidLayer[i];
+	}
+	//rate *= 0.9993;
+}
+
+void UANN::InitializeWeights()
+{
+	// randomly fill Input-Hidden connections with values between -0.5 and 0.5
+	std::random_device rd;
+	std::mt19937_64 generator(rd());
+	std::uniform_real_distribution<float> distribution(-0.5, 0.5);
+	for (size_t i = 0; i < HID_SIZE; ++i) {
+		for (size_t j = 0; j < INP_SIZE; ++j) {
+			InpHid[i][j] = distribution(generator);
+		}
+	}
+	for (size_t i = 0; i < OUT_SIZE; ++i) {
+		for (size_t j = 0; j < HID_SIZE; ++j) {
+			HidOut[i][j] = distribution(generator);
+		}
+	}
+	for (auto& val : biInp) {
+		val = distribution(generator);
+	}
+	for (auto& val : biHid) {
+		val = distribution(generator);
+	}
+}
+
+inline TVector UANN::SendInput(const TVector & input) const
+{
+	TVector HiddenLayer(HID_SIZE);
+	for (size_t i = 0; i < HID_SIZE; ++i) {
+		float sum = biInp[i];
+		for (size_t j = 0; j < INP_SIZE; ++j) {
+			sum += input[j] * InpHid[i][j];
+		}
+		HiddenLayer[i] = sum;
+	}
+	return HiddenLayer;
+}
+
+inline TVector UANN::ActiveHidden(const TVector & hidden) const
+{
+	TVector acHidden(HID_SIZE);
+	for (size_t i = 0; i < HID_SIZE; ++i) {
+		acHidden[i] = (*acHid)(hidden[i]);
+	}
+	return acHidden;
+}
+
+inline TVector UANN::SendHidden(const TVector & hidden) const
+{
+	TVector Output(OUT_SIZE);
+	for (size_t i = 0; i < OUT_SIZE; ++i) {
+		float sum = biHid[i];
+		for (size_t j = 0; j < HID_SIZE; ++j) {
+			sum += hidden[j] * HidOut[i][j];
+		}
+		Output[i] = sum;
+	}
+	return Output;
+}
+
+inline TVector UANN::ActiveOutput(const TVector & output) const
+{
+	TVector acOutput(OUT_SIZE);
+	for (size_t i = 0; i < OUT_SIZE; ++i) {
+		acOutput[i] = (*acOut)(output[i]);
+	}
+	return acOutput;
+}
+
+inline float Sigmoid(float x)
+{
+	return 1 / (1 + exp(-x));
+}
+
+inline float derSigmoid(float x)
+{
+	return Sigmoid(x) * (1 - Sigmoid(x));
+}
+
+inline float BiSig(float x)
+{
+	float temp = 2 / (1 + exp(-x)) - 1;
+	return temp;
+}
+
+inline float derBiSig(float x)
+{
+	return 0.5 * (1 + BiSig(x)) * (1 - BiSig(x));
 }

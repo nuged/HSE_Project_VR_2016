@@ -39,15 +39,14 @@ void ATarget::BeginPlay()
 void ATarget::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	NN->WModify();
+	NN->Learn();
 }
 
 void ATarget::OnEnemyEnterTargetBox(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);
 	if (Enemy) {
-		Enemy->SetReward(1);
-		Enemy->Send();
+		Enemy->Send(1);
 		Enemy->Destroy();
 		HP_Target -= Damage;
 	}

@@ -5,14 +5,13 @@
 #include "UObject/NoExportTypes.h"
 #include <algorithm>
 #include <functional>
-#include <utility>
 #include <random>
 #include <vector>
-#include <unordered_map>
-#include <queue>
+#include <stack>
 #include "ANN.generated.h"
 
 typedef std::vector<float> TVector;
+typedef std::vector<TVector> TWeights;
 
 UCLASS(Blueprintable)
 class TESTVERHSEGAMENNAI_API UANN : public UObject
@@ -21,31 +20,52 @@ class TESTVERHSEGAMENNAI_API UANN : public UObject
 public:
 	UANN();
 
-	UFUNCTION(BlueprintCallable, Category=Action)
-	TArray<int> ChooseAction(const TArray<float>& state);
-
-	// weights' modification
-	UFUNCTION(BlueprintCallable, Category=Action)
-	void WModify();
-
-	UFUNCTION(BlueprintCallable, Category = Action)
-	inline int AddToQueue(int neuron, TArray<float> respond);
+	unsigned ChooseAction(const TVector& state) const;
+	void AddToQueue(const TVector& input, const TVector& desired);
+	void Learn();
 
 protected:
-	// parameters
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Parameters)
-		FVector choice;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Parameters)
-		FVector rate;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Parameters)
-		FVector contribution;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Parameters)
-		FVector vigilance;
+	// helpful methods
+	void InitializeWeights();
+
+	// send input and get not active hidden layer
+	inline TVector SendInput(const TVector& input) const;
+	// implemeent activative funtion and get active hidden layer
+	inline TVector ActiveHidden(const TVector& hidden) const;
+	// send active hid layer to output layer and get output layer
+	inline TVector SendHidden(const TVector& hidden) const;
+	// active output layer
+	inline TVector ActiveOutput(const TVector& output) const;
 
 private:
-	int sizes[3];
-	std::vector<std::vector<TArray<float>>> weights;
-	std::unordered_map<int, int> chosen;
-	std::queue<std::pair<int, TArray<float>>> modification_queue;
-	inline std::vector<TVector> Extract(const TArray<float>& data);
+	float rate;
+
+	// samples queue
+	std::stack<std::vector<TVector>> LearnQueue;
+
+	// NN sizes
+	size_t INP_SIZE;
+	size_t HID_SIZE;
+	size_t OUT_SIZE;
+	
+	// Weights
+	TWeights InpHid;
+	TWeights HidOut;
+
+	// biases
+	TVector biInp;
+	TVector biHid;
+	
+	// activation functions
+	float(*acHid)(float);
+	float(*acOut)(float);
+	// their derivatives
+	float(*derHid)(float);
+	float(*derOut)(float);
 };
+
+// activation functions samples
+inline float Sigmoid(float x);
+inline float derSigmoid(float x);
+inline float BiSig(float x);
+inline float derBiSig(float x);

@@ -3,19 +3,19 @@
 #include "TestVerHSEGameNNAI.h"
 #include "Enemy.h"
 #include "NN_AIController.h"
-#include "ANN.h"
 #include "Target.h"
-#include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
+#include <algorithm>
 
 // Sets default values
 AEnemy::AEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	step_distance = 20.0f;
-	Norminator = 2300;
-	proc = false;
-	flag = false;
+	step_distance = 150.0f;
+	flag = true;
+	f = false;
+	state.resize(2);
+	norm = 18;
 }
 
 // Called when the game starts or when spawned
@@ -28,66 +28,69 @@ void AEnemy::BeginPlay()
 	TActorIterator<ATarget> TargetIter(GetWorld());
 	Target = *TargetIter;
 	TargetLocation = Target->GetActorLocation();
-	TargetLocation.Z = 0;
-	ToGo = GetActorLocation();
 }
 
 void AEnemy::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!proc) {
-		proc = true;
-		FVector OwnLocation = GetActorLocation();
-		OwnLocation.Z = 0;
-		FVector temp = OwnLocation - TargetLocation;
-		float Distance = temp.Size() / Norminator;
-		temp = OwnLocation - FVector(0, 0, 0);
-		float R = temp.Size() / Norminator;
-		FRotator look = UKismetMathLibrary::FindLookAtRotation(FVector(0, 0, 0), OwnLocation);
-		float phi = look.Yaw;
-		if (phi < 0)
-			phi = 360 + phi;
-		float Yaw = GetActorRotation().Yaw;
-		if (Yaw < 0)
-			Yaw = 360 + Yaw;
-		phi /= Norminator;
-		Yaw /= Norminator;
-		state = { Distance, R, phi, Yaw, 1 };
-		TArray<int> result = Target->NN->ChooseAction(state);
-		neuron = result[0];
-		int action = result[1];
-		Implement(action);
-		flag = true;
-	}
-
 	if (flag && GetVelocity().IsZero()) {
 		flag = false;
-		FVector temp = ToGo - TargetLocation;
-		float val = exp(-temp.Size() / Norminator);
-		SetReward(val);
-		Send();
-		proc = false;
+		GetAction();
+	} else if (!GetVelocity().IsZero()) {
+		f = true;
+	}
+	if (f && GetVelocity().IsZero()) {
+		f = false;
+		Send(CountReward());
+		flag = true;
 	}
 }
 
-inline int AEnemy::Send()
-{
-	Target->NN->AddToQueue(neuron, state);
-	return 0;
+inline void AEnemy::Send(float new_reward)
+{	
+	TVector target(8);
+	if (new_reward >= reward) {
+		std::fill(target.begin(), target.end(), -1);
+		target[dir] = 1;
+	}
+	else {
+		std::fill(target.begin(), target.end(), 1);
+		target[dir] = -1;
+	}
+
+	Target->NN->AddToQueue(state, target);
 }
 
-inline int AEnemy::SetReward(float value)
+inline float AEnemy::CountReward()
 {
-	state[4] = value;
-	return 0;
+	FVector temp = GetActorLocation();
+	temp -= TargetLocation;
+	float result = temp.Size();
+	result = 1 / (1 + result);
+	return result;
 }
 
-inline int AEnemy::Implement(int action)
+void AEnemy::MakeStep(unsigned direction)
 {
-	float angle = 360.0 / 8 * action;
-	ToGo.X += cos(angle) * step_distance;
-	ToGo.Y += sin(angle) * step_distance;
+	ToGo = GetActorLocation();
+	float angle = direction * 2 * PI / 8;
+	float x = step_distance * cos(angle);
+	float y = step_distance * sin(angle);
+	ToGo.X += x;
+	ToGo.Y += y;
 	AIC->MoveToLocation(ToGo);
-	return 0;
+}
+
+void AEnemy::GetAction()
+{
+	FVector temp = GetActorLocation();
+	FVector curr_location = temp;
+	reward = CountReward();
+	temp.X = trunc(temp.X / step_distance);
+	temp.Y = trunc(temp.Y / step_distance);
+	state[0] = temp.X / norm;
+	state[1] = temp.Y / norm;
+	dir = Target->NN->ChooseAction(state);
+	MakeStep(dir);
 }
