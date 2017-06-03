@@ -9,7 +9,7 @@
 ATarget::ATarget()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	// set root
 	RootComponent = CreateDefaultSubobject<USceneComponent>(FName("Root_Target"));
@@ -33,13 +33,14 @@ void ATarget::BeginPlay()
 {
 	Super::BeginPlay();
 
-	NN = NewObject<UANN>();
+	NN = NewObject<UANN>(this, UANN::StaticClass());
+	FTimerHandle Tm;
+	GetWorldTimerManager().SetTimer(Tm, NN, &UANN::Learn, 0.05, true, 0.05);
 }
 
 void ATarget::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	NN->Learn();
 }
 
 void ATarget::OnEnemyEnterTargetBox(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
@@ -47,7 +48,7 @@ void ATarget::OnEnemyEnterTargetBox(UPrimitiveComponent * OverlappedComponent, A
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);
 	if (Enemy) {
 		Enemy->Send(1);
-		Enemy->Destroy();
+		Enemy->Die();
 		HP_Target -= Damage;
 	}
 }

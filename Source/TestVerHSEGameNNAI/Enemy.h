@@ -35,11 +35,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
 	float norm;
+	void Die();
 
 protected:
 	inline float CountReward();
 	void MakeStep(unsigned direction);
 	void GetAction();
+
 
 private:
 	class ATarget *Target;
@@ -47,6 +49,7 @@ private:
 	float reward;
 	bool flag;
 	bool f;
+	bool exec;
 	TVector state;
 	FVector ToGo;
 };

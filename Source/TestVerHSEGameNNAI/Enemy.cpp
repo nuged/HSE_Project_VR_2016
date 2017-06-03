@@ -14,6 +14,7 @@ AEnemy::AEnemy()
 	step_distance = 150.0f;
 	flag = true;
 	f = false;
+	exec = false;
 	state.resize(2);
 	norm = 18;
 }
@@ -36,9 +37,11 @@ void AEnemy::Tick(float DeltaSeconds)
 
 	if (flag && GetVelocity().IsZero()) {
 		flag = false;
+		exec = true;
 		GetAction();
 	} else if (!GetVelocity().IsZero()) {
 		f = true;
+		exec = false;
 	}
 	if (f && GetVelocity().IsZero()) {
 		f = false;
@@ -49,6 +52,7 @@ void AEnemy::Tick(float DeltaSeconds)
 
 inline void AEnemy::Send(float new_reward)
 {	
+	exec = true;
 	TVector target(8);
 	if (new_reward >= reward) {
 		std::fill(target.begin(), target.end(), -1);
@@ -60,6 +64,7 @@ inline void AEnemy::Send(float new_reward)
 	}
 
 	Target->NN->AddToQueue(state, target);
+	exec = false;
 }
 
 inline float AEnemy::CountReward()
@@ -93,4 +98,10 @@ void AEnemy::GetAction()
 	state[1] = temp.Y / norm;
 	dir = Target->NN->ChooseAction(state);
 	MakeStep(dir);
+}
+
+void AEnemy::Die()
+{
+	while (exec);
+	Destroy();
 }

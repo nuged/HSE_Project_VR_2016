@@ -7,6 +7,9 @@
 UANN::UANN()
 {
 	rate = 0.127;
+	LearnQueue.resize(100);
+	usable.resize(100, 0);
+	QSize = 0;
 
 	// set sizes
 	INP_SIZE = 2;
@@ -41,22 +44,30 @@ unsigned UANN::ChooseAction(const TVector& state) const
 
 void UANN::AddToQueue(const TVector & input, const TVector & desired)
 {
-	if (LearnQueue.size() > 100)
-		return;
+	if (QSize >= 99)
+		QSize = 0;
+
 	std::vector<TVector> temp(2);
 	temp[0] = input;
 	temp[1] = desired;
-	LearnQueue.push(temp);
+	LearnQueue[QSize] = (temp);
+	usable[QSize++] = 1;
 }
 
-void UANN::Learn()
+inline void UANN::Learn()
 {
-	if (LearnQueue.empty())
+	if (QSize == 0 && !usable[QSize])
 		return;
 
-	TVector Input = LearnQueue.top()[0];
-	TVector Target = LearnQueue.top()[1];
-	LearnQueue.pop();
+	unsigned index = 0;
+	if (QSize != 0)
+		index = rand() % QSize;
+	if (!usable[index])
+		return;
+	usable[index] = 0;
+
+	TVector Input = LearnQueue[index][0];
+	TVector Target = LearnQueue[index][1];
 
 	//if (GEngine)
 		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%u"), LearnQueue.size()));

@@ -5,6 +5,7 @@
 #include "UObject/NoExportTypes.h"
 #include <algorithm>
 #include <functional>
+#include <list>
 #include <random>
 #include <vector>
 #include <stack>
@@ -22,7 +23,7 @@ public:
 
 	unsigned ChooseAction(const TVector& state) const;
 	void AddToQueue(const TVector& input, const TVector& desired);
-	void Learn();
+	inline void Learn();
 
 protected:
 	// helpful methods
@@ -41,7 +42,9 @@ private:
 	float rate;
 
 	// samples queue
-	std::stack<std::vector<TVector>> LearnQueue;
+	std::vector<TWeights> LearnQueue;
+	unsigned QSize;
+	std::vector<int> usable;
 
 	// NN sizes
 	size_t INP_SIZE;

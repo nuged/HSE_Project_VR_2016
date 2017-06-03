@@ -9,7 +9,7 @@
 ARealObstacle::ARealObstacle()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	Root_Obstacle = CreateDefaultSubobject<USceneComponent>(FName("Root_Obstacle"));
 	RootComponent = Root_Obstacle;
 
@@ -42,7 +42,7 @@ void ARealObstacle::OnEnemyEnterObstacleBox(UPrimitiveComponent * OverlappedComp
 	AEnemy *Enemy = Cast<AEnemy>(OtherActor);
 	if (Enemy) {
 		Enemy->Send(0);
-		Enemy->Destroy();
+		Enemy->Die();
 	}
 }
 
